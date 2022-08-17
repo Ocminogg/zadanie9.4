@@ -1,87 +1,65 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using System.Threading;
+using System;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
+using Telegram.Bot.Polling;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
-namespace zadanie9._4
+var botClient = new TelegramBotClient("5560152751:AAExhnTdlWOYWWBWoxRbDZrOubywSxMfnic");
+
+using var cts = new CancellationTokenSource();
+
+// StartReceiving does not block the caller thread. Receiving is done on the ThreadPool.
+var receiverOptions = new ReceiverOptions
 {
-    internal class Program
+    AllowedUpdates = Array.Empty<UpdateType>() // receive all update types
+};
+botClient.StartReceiving(
+    updateHandler: HandleUpdateAsync,
+    pollingErrorHandler: HandlePollingErrorAsync,
+    receiverOptions: receiverOptions,
+    cancellationToken: cts.Token
+);
+
+var me = await botClient.GetMeAsync();
+
+Console.WriteLine($"Start listening for @{me.Username}");
+Console.ReadLine();
+
+// Send cancellation request to stop bot
+cts.Cancel();
+
+async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+{
+    // Only process Message updates: https://core.telegram.org/bots/api#message
+    if (update.Message is not { } message)
+        return;
+    // Only process text messages
+    if (message.Text is not { } messageText)
+        return;
+
+    var chatId = message.Chat.Id;
+
+    Console.WriteLine($"Received a '{messageText}' message in chat {chatId}.");
+
+    // Echo received message text
+    Message sentMessage = await botClient.SendTextMessageAsync(
+        chatId: chatId,
+        text: "You said:\n" + messageText,
+        cancellationToken: cancellationToken);
+}
+
+Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+{
+    var ErrorMessage = exception switch
     {
-        static TelegramBotClient bot;
+        ApiRequestException apiRequestException
+            => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
+        _ => exception.ToString()
+    };
 
-        static void Main(string[] args)
-        {
-
-            string token = "5560152751:AAExhnTdlWOYWWBWoxRbDZrOubywSxMfnic";
-
-            #region exc
-
-            //// https://hidemyna.me/ru/proxy-list/?maxtime=250#list
-
-            // Содержит параметры HTTP-прокси для System.Net.WebRequest класса.
-            var proxy = new WebProxy()
-            {
-                Address = new Uri($"http://77.87.240.74:3128"),
-                UseDefaultCredentials = false,
-                //Credentials = new NetworkCredential(userName: "login", password: "password")
-            };
-
-            // Создает экземпляр класса System.Net.Http.HttpClientHandler.
-            var httpClientHandler = new HttpClientHandler() { Proxy = proxy };
-
-            // Предоставляет базовый класс для отправки HTTP-запросов и получения HTTP-ответов 
-            // от ресурса с заданным URI.
-            HttpClient hc = new HttpClient(httpClientHandler);
-
-            bot = new TelegramBotClient(token, hc);
-
-            #endregion
-
-            //bot = new TelegramBotClient(token);
-            bot.OnMessage += MessageListener;
-            bot.StartReceiving();
-            Console.ReadKey();
-        }
-
-        private static void MessageListener(object sender, Telegram.Bot.Args.MessageEventArgs e)
-        {
-            string text = $"{DateTime.Now.ToLongTimeString()}: {e.Message.Chat.FirstName} {e.Message.Chat.Id} {e.Message.Text}";
-
-            Console.WriteLine($"{text} TypeMessage: {e.Message.Type.ToString()}");
-
-
-            if (e.Message.Type == Telegram.Bot.Types.Enums.MessageType.Document)
-            {
-                Console.WriteLine(e.Message.Document.FileId);
-                Console.WriteLine(e.Message.Document.FileName);
-                Console.WriteLine(e.Message.Document.FileSize);
-
-                DownLoad(e.Message.Document.FileId, e.Message.Document.FileName);
-            }
-
-            if (e.Message.Text == null) return;
-
-            var messageText = e.Message.Text;
-
-
-            bot.SendTextMessageAsync(e.Message.Chat.Id,
-                $"{messageText}"
-                );
-        }
-
-        static async void DownLoad(string fileId, string path)
-        {
-            var file = await bot.GetFileAsync(fileId);
-            FileStream fs = new FileStream("_" + path, FileMode.Create);
-            await bot.DownloadFileAsync(file.FilePath, fs);
-            fs.Close();
-
-            fs.Dispose();
-        }
-    }
+    Console.WriteLine(ErrorMessage);
+    return Task.CompletedTask;
 }
