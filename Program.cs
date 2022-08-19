@@ -73,7 +73,8 @@ async Task HandleMessage(ITelegramBotClient botClient, Message message, Cancella
         ReplyKeyboardMarkup keyboard = new(new[]
         {
             new KeyboardButton[] {"Hello", "Салам"},
-            new KeyboardButton[] {"Привет", "Прощай дворф" }
+            new KeyboardButton[] {"Привет", "Прощай дворф" },
+            new KeyboardButton[] { "Отправь фото", "We" }
         })
         {
             ResizeKeyboard = true
@@ -106,7 +107,7 @@ async Task HandleMessage(ITelegramBotClient botClient, Message message, Cancella
 
                 Message sentVideo = await botClient.SendVideoAsync(
                 chatId: message.Chat.Id,
-                video: new InputOnlineFile ("https://gogetvideo.net/index.php?output=yt/XGXYPDXTfn4/128%7e%7e1%7e%7e%D0%9F%D1%80%D0%BE%D1%89%D0%B0%D0%B9%D0%94%D0%B2%D0%BE%D1%80%D1%84_uuid-62ffa994ed671.mp4"),
+                video: new InputOnlineFile ("https://github.com/Ocminogg/zadanie9.4/raw/master/Media/Video/%D0%9F%D1%80%D0%BE%D1%89%D0%B0%D0%B9%D0%94%D0%B2%D0%BE%D1%80%D1%84%5BGoGetVideo.net%5D.mp4"),
                 supportsStreaming: true,
                 cancellationToken: cancellationToken);
                 break;
