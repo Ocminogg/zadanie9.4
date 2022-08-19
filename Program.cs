@@ -6,6 +6,7 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using System.Collections.Generic;
 
 var botClient = new TelegramBotClient("5560152751:AAExhnTdlWOYWWBWoxRbDZrOubywSxMfnic");
 
@@ -31,8 +32,11 @@ Console.ReadLine();
 // Send cancellation request to stop bot
 cts.Cancel();
 
+
+
 async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
+    List<string> mes = new List<string>() { "Hello", "Hi", "Салам", "Привет", "Здравствуй", "Здравствуйте" };
     // Only process Message updates: https://core.telegram.org/bots/api#message
     if (update.Message is not { } message)
         return;
@@ -44,11 +48,50 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
 
     Console.WriteLine($"Received a '{messageText}' message in chat {chatId}.");
 
-    // Echo received message text
-    Message sentMessage = await botClient.SendTextMessageAsync(
+    foreach (var me in mes)
+    {
+        if (me == messageText)
+        {
+            if (messageText == "Салам")
+            {
+                // Echo received message text
+                Message sentMessage = await botClient.SendTextMessageAsync(
+                    chatId: chatId,
+                    text: "Ас-саляму алейкум\n",
+                    cancellationToken: cancellationToken);
+                break;
+            }
+            else
+            {
+                // Echo received message text
+                Message sentMessage = await botClient.SendTextMessageAsync(
+                    chatId: chatId,
+                    text: "Здравствуй\n",
+                    cancellationToken: cancellationToken);
+                break;
+            }
+        }
+    }
+    if (messageText == "We")
+    {
+        Message messageMusic = await botClient.SendAudioAsync(
         chatId: chatId,
-        text: "You said:\n" + messageText,
+        audio: "https://minty.club/artist/daft-punk/get-lucky-feat-pharrell-williams-and-nile-rodgers/daft-punk-get-lucky-feat-pharrell-williams-and-nile-rodgers.mp3",
+
         cancellationToken: cancellationToken);
+    }
+
+
+    if (messageText == "Отправь фото")
+    {
+        Message messagePhoto = await botClient.SendPhotoAsync(
+        chatId: chatId,
+        photo: "https://github.com/TelegramBots/book/raw/master/src/docs/photo-ara.jpg",
+        caption: "<b>Ara bird</b>. <i>Source</i>: <a href=\"https://pixabay.com\">Pixabay</a>",
+        parseMode: ParseMode.Html,
+        cancellationToken: cancellationToken);
+    }
+
 }
 
 Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
@@ -62,4 +105,16 @@ Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, 
 
     Console.WriteLine(ErrorMessage);
     return Task.CompletedTask;
+}
+
+namespace zadanie9nout
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+
+        }
+    }
+
 }
