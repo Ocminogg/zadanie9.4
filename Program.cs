@@ -7,6 +7,8 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using System.Collections.Generic;
+using Telegram.Bot.Types.ReplyMarkups;
+using Telegram.Bot.Types.InputFiles;
 
 var botClient = new TelegramBotClient("5560152751:AAExhnTdlWOYWWBWoxRbDZrOubywSxMfnic");
 
@@ -36,10 +38,16 @@ cts.Cancel();
 
 async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
-    List<string> mes = new List<string>() { "Hello", "Hi", "Салам", "Привет", "Здравствуй", "Здравствуйте" };
+    
     // Only process Message updates: https://core.telegram.org/bots/api#message
     if (update.Message is not { } message)
+        //await HandleMessage(botClient, update.Message, cancellationToken);
         return;
+    if (update.Type == UpdateType.Message && update?.Message?.Text != null)
+    {
+        await HandleMessage(botClient, update.Message, cancellationToken);
+        return;
+    }
     // Only process text messages
     if (message.Text is not { } messageText)
         return;
@@ -48,53 +56,101 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
 
     Console.WriteLine($"Received a '{messageText}' message in chat {chatId}.");
 
+    
+
+}
+
+async Task HandleMessage(ITelegramBotClient botClient, Message message, CancellationToken cancellationToken)
+{
+    if (message.Text == "/start")
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Choose commands: /inline | /keyboard");
+        return;
+    }
+
+    if (message.Text == "/keyboard")
+    {
+        ReplyKeyboardMarkup keyboard = new(new[]
+        {
+            new KeyboardButton[] {"Hello", "Салам"},
+            new KeyboardButton[] {"Привет", "Прощай дворф" }
+        })
+        {
+            ResizeKeyboard = true
+        };
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Choose:", replyMarkup: keyboard);
+        return;
+    }
+
+    List<string> mes = new List<string>() { "Hello", "Hi", "Салам", "Привет", "Здравствуй", "Здравствуйте", "Прощай дворф" };
     foreach (var me in mes)
     {
-        if (me == messageText)
+        if (me == message.Text)
         {
-            if (messageText == "Салам")
+            if (message.Text == "Салам")
             {
                 // Echo received message text
                 Message sentMessage = await botClient.SendTextMessageAsync(
-                    chatId: chatId,
+                    chatId: message.Chat.Id,
                     text: "Ас-саляму алейкум\n",
                     cancellationToken: cancellationToken);
+                break;
+            }
+            if (message.Text == "Прощай дворф")
+            {
+                // Echo received message text
+                Message sentMessage = await botClient.SendTextMessageAsync(
+                    chatId: message.Chat.Id,
+                    text: "Прощай, хорошего денёчка)\n",
+                    cancellationToken: cancellationToken);
+
+                Message sentVideo = await botClient.SendVideoAsync(
+                chatId: message.Chat.Id,
+                video: new InputOnlineFile ("https://gogetvideo.net/index.php?output=yt/XGXYPDXTfn4/128%7e%7e1%7e%7e%D0%9F%D1%80%D0%BE%D1%89%D0%B0%D0%B9%D0%94%D0%B2%D0%BE%D1%80%D1%84_uuid-62ffa994ed671.mp4"),
+                supportsStreaming: true,
+                cancellationToken: cancellationToken);
                 break;
             }
             else
             {
                 // Echo received message text
                 Message sentMessage = await botClient.SendTextMessageAsync(
-                    chatId: chatId,
+                    chatId: message.Chat.Id,
                     text: "Здравствуй\n",
                     cancellationToken: cancellationToken);
                 break;
             }
         }
     }
-    if (messageText == "We")
+
+    if (message.Text == "We")
     {
         Message messageMusic = await botClient.SendAudioAsync(
-        chatId: chatId,
+        chatId: message.Chat.Id,
         audio: "https://minty.club/artist/daft-punk/get-lucky-feat-pharrell-williams-and-nile-rodgers/daft-punk-get-lucky-feat-pharrell-williams-and-nile-rodgers.mp3",
 
         cancellationToken: cancellationToken);
     }
 
 
-    if (messageText == "Отправь фото")
+    if (message.Text == "Отправь фото")
     {
         Message messagePhoto = await botClient.SendPhotoAsync(
-        chatId: chatId,
+        chatId: message.Chat.Id,
         photo: "https://github.com/TelegramBots/book/raw/master/src/docs/photo-ara.jpg",
         caption: "<b>Ara bird</b>. <i>Source</i>: <a href=\"https://pixabay.com\">Pixabay</a>",
         parseMode: ParseMode.Html,
         cancellationToken: cancellationToken);
     }
 
-}
 
-Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+    //await botClient.SendTextMessageAsync(message.Chat.Id, $"You said:\n{message.Text}");
+}
+/////////////////////////////////////////////////////////
+
+
+
+    Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
 {
     var ErrorMessage = exception switch
     {
